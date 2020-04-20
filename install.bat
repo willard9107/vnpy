@@ -1,3 +1,5 @@
+cd C:\Users\mxw\Desktop\work_dir\projects\vnpy
+
 :: Upgrade pip & setuptools
 python -m pip install --upgrade pip setuptools
 
