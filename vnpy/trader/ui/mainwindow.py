@@ -250,24 +250,24 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Call main engine close function before exit.
         """
-        reply = QtWidgets.QMessageBox.question(
-            self,
-            "退出",
-            "确认退出？",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
-        )
+        # reply = QtWidgets.QMessageBox.question(
+        #     self,
+        #     "退出",
+        #     "确认退出？",
+        #     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        #     QtWidgets.QMessageBox.No,
+        # )
 
-        if reply == QtWidgets.QMessageBox.Yes:
-            for widget in self.widgets.values():
-                widget.close()
-            self.save_window_setting("custom")
+        # if reply == QtWidgets.QMessageBox.Yes:
+        for widget in self.widgets.values():
+            widget.close()
+        self.save_window_setting("custom")
 
-            self.main_engine.close()
+        self.main_engine.close()
 
-            event.accept()
-        else:
-            event.ignore()
+        event.accept()
+        # else:
+        #     event.ignore()
 
     def open_widget(self, widget_class: QtWidgets.QWidget, name: str) -> None:
         """
