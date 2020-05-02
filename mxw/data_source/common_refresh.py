@@ -8,8 +8,8 @@ from mxw.data_source.tushare_wp import *
 from mxw.data_source.tq_wp import *
 from mxw.db.DbModule import *
 from vnpy.trader.constant import Exchange
-from mxw.data_utils import *
 from datetime import datetime, timedelta, time
+from mxw.data_utils import *
 
 
 def fresh_all_trading_date():
