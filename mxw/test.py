@@ -1,4 +1,10 @@
+import os
 import sys
+
+import redis
+
+if os.getcwd() not in sys.path:
+    sys.path.append(os.getcwd())
 
 
 class Template:
@@ -135,5 +141,29 @@ def attrs(**kwds):
 # inn1.inner_func_1()
 
 
+import redis_lock
+import time as _time
+
+conn = redis.StrictRedis(host='nas.willard.love', port=32778)
+
+
+def redis_lock_test():
+    with redis_lock.Lock(conn, 'fetch_tick_data_limit_offset_lock', expire=60, auto_renewal=True):
+        print('get lock-----------')
+        count = 0
+        while count < 5:
+            print('do sth....count: {}'.format(count))
+            count += 1
+            _time.sleep(1)
+        print('release lock*************')
+
+
 if __name__ == '__main__':
-    print(sys.argv)
+    if len(sys.argv) > 1 and sys.argv[1] == 'lock_test':
+        count = 0
+        while count < 5:
+            redis_lock_test()
+            count += 1
+        print('test over...')
+    else:
+        print('nothing todo.....')

@@ -1,10 +1,12 @@
 import dataclasses
 from typing import List
 
+import redis_lock
 from peewee import *
 from datetime import datetime, date, timedelta
 
 from mxw.obj import TradingDate, Instrument
+from mxw.utils import common_utils
 from vnpy.trader.constant import Exchange
 from vnpy.trader.object import BarData, TickData
 
@@ -199,10 +201,13 @@ def get_tick_table_class(symbol: str):
 
         @staticmethod
         def save_all(objs: List["TickData"]):
-            dicts = [DbTickData.from_tick(i).to_dict() for i in objs]
-            with db.atomic():
-                for c in chunked(dicts, 1000):
-                    DbTickData.insert_many(c).on_conflict_ignore().execute()
+            with redis_lock.Lock(common_utils.redis_conn, 'fetch_tick_data_limit_offset_lock', expire=60,
+                                 auto_renewal=True):
+                print('get lock, start to insert db-----------')
+                dicts = [DbTickData.from_tick(i).to_dict() for i in objs]
+                with db.atomic():
+                    for c in chunked(dicts, 1000):
+                        DbTickData.insert_many(c).on_conflict_ignore().execute()
 
     db.create_tables([DbTickData])
     return DbTickData
