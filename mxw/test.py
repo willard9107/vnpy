@@ -163,7 +163,7 @@ def pandas_read_csv_test(num):
     # df = pd.read_csv(file_name)
     if num is 2:
         return 1, 2
-    return 1
+    return []
 
 
 if __name__ == '__main__':
@@ -174,6 +174,6 @@ if __name__ == '__main__':
             count += 1
         print('test over...')
     else:
-        a, b = pandas_read_csv_test(2)
+        a, b = pandas_read_csv_test(1)
         print(a, b)
         print('nothing todo.....')
