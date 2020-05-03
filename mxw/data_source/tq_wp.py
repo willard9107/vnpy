@@ -4,6 +4,8 @@ import os
 import time
 from datetime import datetime, date
 from contextlib import closing
+
+import requests
 from tqsdk import TqApi, TqSim
 from tqsdk.tools import DataDownloader
 from mxw.data_utils import get_order_id_year, exact_exchange_symbol
@@ -33,6 +35,19 @@ from vnpy.trader.constant import Exchange
 from vnpy.trader.object import TickData
 
 
+def tq_connect():
+    _reconnect = 3
+    while _reconnect > 0:
+        try:
+            api = TqApi(TqSim())
+            return api
+        except requests.exceptions.SSLError as error:
+            print('----------------------------------------------------')
+            print(error)
+            print('-------------------reconnect---------------------------------')
+    raise Exception('ta connect error for 3 times.............')
+
+
 def get_tick_data(instrument: Instrument, start_date: datetime, end_date: datetime, file_name: str):
     # tqsdk 没有2016年以前的数据，不需要走下面的逻辑
     if get_order_id_year(instrument.order_book_id) < 2016 or end_date < datetime(2016, 1, 1, 0, 0, 0) \
@@ -41,7 +56,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
 
     exchange_order_id = '{}.{}'.format(instrument.exchange, exact_exchange_symbol(instrument))
 
-    api = TqApi(TqSim())
+    api = tq_connect()
     download_tasks = {"T_tick": DataDownloader(api, symbol_list=[exchange_order_id], dur_sec=0,
                                                start_dt=start_date, end_dt=end_date,
                                                csv_file_name=file_name)}

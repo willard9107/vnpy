@@ -27,7 +27,7 @@ def fresh_all_exchange_instruments():
 data_path = '/Volumes/1t/macstat/FutureData/future_data_tq/'
 
 
-def fetch_instrument_all_tick_data(ins: DbInstrument):
+def fetch_instrument_all_tick_data(ins: DbInstrument, count=-1):
     trading_dates = list(DbTradingDate.select().where((DbTradingDate.t_date >= ins.listed_date)
                                                       & (DbTradingDate.t_date <= ins.de_listed_date)
                                                       & (DbTradingDate.is_open == 1)).execute())
@@ -51,27 +51,28 @@ def fetch_instrument_all_tick_data(ins: DbInstrument):
         if cur_date > datetime.now():
             break
 
+        # 临时注释，解决之前已经跑过的空数据
         if ins.order_book_id == 'A1609' and cur_date < datetime(2016, 7, 12):
             last_date = cur_date
             continue
-
         if ins.order_book_id == 'FG1608' and cur_date < datetime(2016, 5, 9):
             last_date = cur_date
             continue
-
         if ins.order_book_id == 'AG1606' and cur_date < datetime(2016, 1, 11):
             last_date = cur_date
             continue
+        # 临时注释--------end---------------
 
         file_name = file_path_name + ins.order_book_id + trading_date.t_date.strftime('_%Y_%m_%d.csv')
         # 如果文件存在，说明已经下载过相关内容，跳过
-        if os.path.exists(file_name):
+        if os.path.exists(file_name) or os.path.exists(file_name+'.0'):
             last_date = cur_date
             continue
         file_name = file_name + '.tmp'
         print('----------------------------------------------------.')
-        print('start..{}.{} start={}, end={}'.format(ins.exchange, ins.order_book_id, last_date,
-                                                     cur_date))
+        print('start.count={}---{}.{} start={}, end={}'.format(count, ins.exchange, ins.order_book_id, last_date,
+                                                               cur_date))
+
         tick_list = get_tick_data(ins.to_instrument(), last_date, cur_date, file_name)
         if tick_list:
             print('save tick data to db....')
@@ -79,6 +80,10 @@ def fetch_instrument_all_tick_data(ins: DbInstrument):
             db_tick_class.save_all(tick_list)
             time_record()
             os.rename(file_name, file_name[:-4])
+        else:
+            print('empty file.........')
+            os.rename(file_name, file_name[:-4]+'.0')
+
         last_date = cur_date
 
     # print(ins.__data__)
@@ -90,10 +95,13 @@ def fetch_instrument_all_tick_data(ins: DbInstrument):
 
 
 def fetch_all_instrument_tick_data(offset: int, limit: int):
-    result = DbInstrument.select().where(DbInstrument.de_listed_date > '2016-01-01').offset(offset).limit(
+    result = DbInstrument.select().where(DbInstrument.de_listed_date > '2016-01-01').order_by(
+        DbInstrument.id.desc()).offset(offset).limit(
         limit).execute()
+    count = 0
     for ins in result:
-        fetch_instrument_all_tick_data(ins)
+        count += 1
+        fetch_instrument_all_tick_data(ins, count)
 
 
 def fetch_one_instrument_tick_data(symbol_id: str):
