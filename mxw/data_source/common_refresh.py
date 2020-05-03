@@ -27,7 +27,7 @@ def fresh_all_exchange_instruments():
 data_path = '/Volumes/1t/macstat/FutureData/future_data_tq/'
 
 
-def fetch_instrument_all_tick_data(ins: DbInstrument, count=-1):
+def fetch_instrument_all_tick_data(ins: DbInstrument, count=-1, argv=None):
     trading_dates = list(DbTradingDate.select().where((DbTradingDate.t_date >= ins.listed_date)
                                                       & (DbTradingDate.t_date <= ins.de_listed_date)
                                                       & (DbTradingDate.is_open == 1)).execute())
@@ -65,24 +65,30 @@ def fetch_instrument_all_tick_data(ins: DbInstrument, count=-1):
 
         file_name = file_path_name + ins.order_book_id + trading_date.t_date.strftime('_%Y_%m_%d.csv')
         # 如果文件存在，说明已经下载过相关内容，跳过
-        if os.path.exists(file_name) or os.path.exists(file_name+'.0'):
+        if os.path.exists(file_name) or os.path.exists(file_name + '.0'):
             last_date = cur_date
             continue
         file_name = file_name + '.tmp'
-        print('----------------------------------------------------.')
+        print('--------------------------------------------argv={}'.format(argv))
         print('start.count={}---{}.{} start={}, end={}'.format(count, ins.exchange, ins.order_book_id, last_date,
                                                                cur_date))
 
         tick_list = get_tick_data(ins.to_instrument(), last_date, cur_date, file_name)
         if tick_list:
-            print('save tick data to db....')
-            db_tick_class = get_tick_table_class(ins.order_book_id)
-            db_tick_class.save_all(tick_list)
-            time_record()
+            # print('save tick data to db....')
+            # db_tick_class = get_tick_table_class(ins.order_book_id)
+            # db_tick_class.save_all(tick_list)
+            # time_record()
             os.rename(file_name, file_name[:-4])
         else:
-            print('empty file.........')
-            os.rename(file_name, file_name[:-4]+'.0')
+            print('下载的文件为空 .........')
+            if os.path.exists(file_name):
+                # os.rename(file_name, file_name[:-4])
+                os.rename(file_name, file_name[:-4] + '.0')
+            else:
+                _f = open(file_name[:-4] + '.0', 'w')
+                _f.close()
+                print('下载文件不存在，主动创建.0 文件, file_name = {}'.format(file_name[:-4] + '.0'))
 
         last_date = cur_date
 
@@ -101,7 +107,7 @@ def fetch_all_instrument_tick_data(offset: int, limit: int):
     count = 0
     for ins in result:
         count += 1
-        fetch_instrument_all_tick_data(ins, count)
+        fetch_instrument_all_tick_data(ins, count, argv=[offset, limit])
 
 
 def fetch_one_instrument_tick_data(symbol_id: str):
@@ -110,11 +116,33 @@ def fetch_one_instrument_tick_data(symbol_id: str):
         fetch_instrument_all_tick_data(ins)
 
 
+def auto_command_fetch_one_instrument_tick_data(_num_id):
+    offset = _num_id * 50
+    while offset < 2950:
+        fetch_all_instrument_tick_data(offset, 50)
+        offset += 50 * 10
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+        print('-----------------------------------------')
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'one':
         fetch_one_instrument_tick_data(sys.argv[2].upper())
+    elif sys.argv[1] == 'ten':
+        num_id = int(sys.argv[2])
+        if 0 <= num_id < 10:
+            auto_command_fetch_one_instrument_tick_data(num_id)
+        else:
+            print('argument illegal')
     else:
-        fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]))
+        fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
 
     # fresh_all_trading_date()
     # fresh_all_exchange_instruments()

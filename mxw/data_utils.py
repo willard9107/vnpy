@@ -8,7 +8,7 @@ def exact_exchange_symbol(ins: Instrument):
         return ins.order_book_id.lower()
     elif ins.exchange in ['CZCE']:
         ori = ins.order_book_id.upper()
-        return ori[:-4]+ori[-3:]
+        return ori[:-4] + ori[-3:]
     else:
         return ins.order_book_id.upper()
 
@@ -23,6 +23,8 @@ def get_order_id_year(order_id: str):
 
 
 last_time = _sys_time.time()
+
+
 def time_record():
     global last_time
     cur_time = _sys_time.time()

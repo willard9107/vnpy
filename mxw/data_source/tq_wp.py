@@ -34,18 +34,30 @@ from mxw.data_utils import *
 from vnpy.trader.constant import Exchange
 from vnpy.trader.object import TickData
 
+api = None
+use_count = 0
 
-def tq_connect():
+
+def tq_connect(renew=False):
     _reconnect = 3
+    global use_count, api
+    use_count += 1
     while _reconnect > 0:
         try:
-            api = TqApi(TqSim())
+            if api is None:
+                api = TqApi(TqSim())
+                use_count = 0
+            elif renew:
+                api.close()
+                api = TqApi(TqSim())
+                use_count = 0
             return api
-        except requests.exceptions.SSLError as error:
+        except Exception as error:
             print('----------------------------------------------------')
             print(error)
             print('-------------------reconnect---------------------------------')
-    raise Exception('ta connect error for 3 times.............')
+            _reconnect -= 1
+    raise Exception('muxian.wu------tqsdk connect error for 3 times.............')
 
 
 def get_tick_data(instrument: Instrument, start_date: datetime, end_date: datetime, file_name: str):
@@ -56,8 +68,8 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
 
     exchange_order_id = '{}.{}'.format(instrument.exchange, exact_exchange_symbol(instrument))
 
-    api = tq_connect()
-    download_tasks = {"T_tick": DataDownloader(api, symbol_list=[exchange_order_id], dur_sec=0,
+    _tq_api = tq_connect()
+    download_tasks = {"T_tick": DataDownloader(_tq_api, symbol_list=[exchange_order_id], dur_sec=0,
                                                start_dt=start_date, end_dt=end_date,
                                                csv_file_name=file_name)}
 
@@ -66,16 +78,34 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
 
     error_flag = False
     # 使用with closing机制确保下载完成后释放对应的资源
-    with closing(api):
-        while not all([v.is_finished() for v in download_tasks.values()]):
-            if not api.wait_update(time.time() + 1):
-                os.remove(file_name)
-                error_flag = True
-                print('fetch tick error-> {}  date = {}'.format(instrument, end_date), file=sys.stderr)
-                break
-            # print("progress: ", {k: ("%.2f%%" % v.get_progress()) for k, v in download_tasks.items()})
-        print('tick 数据下载完成...')
-        time_record()
+    download_over = False
+    while not download_over:
+        try:
+            while not all([v.is_finished() for v in download_tasks.values()]):
+                if not _tq_api.wait_update(time.time() + 1):
+                    os.remove(file_name)
+                    error_flag = True
+                    print('fetch tick error-> {}  date = {}'.format(instrument, end_date), file=sys.stderr)
+                    break
+                # print("progress: ", {k: ("%.2f%%" % v.get_progress()) for k, v in download_tasks.items()})
+            download_over = True
+        except Exception as error:
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print('download error...................')
+            print(error)
+            _tq_api = tq_connect(renew=True)
+
+    print('tick 数据下载完成...')
+    time_record()
 
     if error_flag or os.path.getsize(file_name) == 0:
         print('**************************************************')
@@ -107,7 +137,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
                              open_interest=open_interest, last_price=last_price, bid_price_1=bid_price1,
                              bid_volume_1=bid_volume1, ask_price_1=ask_price1, ask_volume_1=ask_volume1)
         result.append(tick_data)
-    print('tick_data return......')
+    print('tick_data return----count= {}'.format(len(result)))
     time_record()
     return result
 

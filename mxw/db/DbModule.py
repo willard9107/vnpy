@@ -7,6 +7,7 @@ from datetime import datetime, date, timedelta
 
 from mxw.obj import TradingDate, Instrument
 from mxw.utils import common_utils
+from mxw.data_utils import *
 from vnpy.trader.constant import Exchange
 from vnpy.trader.object import BarData, TickData
 
@@ -203,7 +204,11 @@ def get_tick_table_class(symbol: str):
         def save_all(objs: List["TickData"]):
             with redis_lock.Lock(common_utils.redis_conn, 'fetch_tick_data_limit_offset_lock', expire=60,
                                  auto_renewal=True):
+                time_record()
                 print('get lock, start to insert db-----------')
+                print('* * * * *')
+                print('* * * * *')
+                print('* * * * *')
                 dicts = [DbTickData.from_tick(i).to_dict() for i in objs]
                 with db.atomic():
                     for c in chunked(dicts, 1000):
