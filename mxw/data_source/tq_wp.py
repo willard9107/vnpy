@@ -60,7 +60,7 @@ def tq_connect(renew=False):
     raise Exception('muxian.wu------tqsdk connect error for 3 times.............')
 
 
-def get_tick_data(instrument: Instrument, start_date: datetime, end_date: datetime, file_name: str):
+def get_tick_data(instrument: Instrument, start_date: datetime, end_date: datetime, file_name: str, process=True):
     # tqsdk 没有2016年以前的数据，不需要走下面的逻辑
     if get_order_id_year(instrument.order_book_id) < 2016 or end_date < datetime(2016, 1, 1, 0, 0, 0) \
             or instrument.order_book_symbol in ['PM', 'RI', 'WH', 'JR']:
@@ -118,6 +118,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
     # print(time.time())
     time_record()
     result = []
+    result_flag = False
     for index, row in df.iterrows():
         tick_time = datetime.strptime(row[0][:-3], '%Y-%m-%d %H:%M:%S.%f')
         last_price = row[1] if not math.isnan(row[1]) else 0
@@ -132,6 +133,10 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
         if volume == 0:
             continue
 
+        result_flag = True
+        if not process:
+            return result_flag, []
+
         # print(row[0], row[1], row['datetime'])
         tick_data = TickData('DB', instrument.order_book_id, Exchange(instrument.exchange), tick_time, volume=volume,
                              open_interest=open_interest, last_price=last_price, bid_price_1=bid_price1,
@@ -139,7 +144,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
         result.append(tick_data)
     print('tick_data return----count= {}'.format(len(result)))
     time_record()
-    return result
+    return result_flag, result
 
 
 if __name__ == '__main__':

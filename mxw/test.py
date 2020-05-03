@@ -144,10 +144,9 @@ def attrs(**kwds):
 import redis_lock
 import time as _time
 
-conn = redis.StrictRedis(host='nas.willard.love', port=32778)
-
 
 def redis_lock_test():
+    conn = redis.StrictRedis(host='nas.willard.love', port=32778)
     with redis_lock.Lock(conn, 'fetch_tick_data_limit_offset_lock', expire=60, auto_renewal=True):
         print('get lock-----------')
         count = 0
@@ -158,6 +157,15 @@ def redis_lock_test():
         print('release lock*************')
 
 
+def pandas_read_csv_test(num):
+    # file_name = '/Volumes/1t/macstat/FutureData/future_data_tq/M/M2005/M2005_2020_04_22.csv'
+    # import pandas as pd
+    # df = pd.read_csv(file_name)
+    if num is 2:
+        return 1, 2
+    return 1
+
+
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'lock_test':
         count = 0
@@ -166,4 +174,6 @@ if __name__ == '__main__':
             count += 1
         print('test over...')
     else:
+        a, b = pandas_read_csv_test(2)
+        print(a, b)
         print('nothing todo.....')

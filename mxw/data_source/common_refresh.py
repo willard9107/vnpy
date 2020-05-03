@@ -73,8 +73,8 @@ def fetch_instrument_all_tick_data(ins: DbInstrument, count=-1, argv=None):
         print('start.count={}---{}.{} start={}, end={}'.format(count, ins.exchange, ins.order_book_id, last_date,
                                                                cur_date))
 
-        tick_list = get_tick_data(ins.to_instrument(), last_date, cur_date, file_name)
-        if tick_list:
+        tick_flag, tick_list = get_tick_data(ins.to_instrument(), last_date, cur_date, file_name, process=False)
+        if tick_flag:
             # print('save tick data to db....')
             # db_tick_class = get_tick_table_class(ins.order_book_id)
             # db_tick_class.save_all(tick_list)
