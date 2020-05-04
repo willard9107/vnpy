@@ -173,6 +173,8 @@ if __name__ == '__main__':
             redis_lock_test()
             count += 1
         print('test over...')
+    elif len(sys.argv)>1 and sys.argv[1] == 'exception_test':
+        raise Exception('mxw exception....')
     else:
         a, b = pandas_read_csv_test(1)
         print(a, b)

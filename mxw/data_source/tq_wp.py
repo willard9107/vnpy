@@ -36,21 +36,23 @@ from vnpy.trader.object import TickData
 
 api = None
 use_count = 0
+use_error_count = 0
 
 
 def tq_connect(renew=False):
     _reconnect = 3
-    global use_count, api
+    global use_count, api, use_error_count
     use_count += 1
     while _reconnect > 0:
         try:
             if api is None:
                 api = TqApi(TqSim())
                 use_count = 0
-            elif renew:
+            elif renew or use_error_count > 230:
                 api.close()
                 api = TqApi(TqSim())
                 use_count = 0
+                use_error_count = 0
             return api
         except Exception as error:
             print('----------------------------------------------------')
@@ -58,6 +60,11 @@ def tq_connect(renew=False):
             print('-------------------reconnect---------------------------------')
             _reconnect -= 1
     raise Exception('muxian.wu------tqsdk connect error for 3 times.............')
+
+
+def download_error_once():
+    global use_error_count
+    use_error_count += 1
 
 
 def get_tick_data(instrument: Instrument, start_date: datetime, end_date: datetime, file_name: str, process=True):
@@ -87,6 +94,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
                     os.remove(file_name)
                     error_flag = True
                     print('fetch tick error-> {}  date = {}'.format(instrument, end_date), file=sys.stderr)
+                    download_error_once()
                     break
                 # print("progress: ", {k: ("%.2f%%" % v.get_progress()) for k, v in download_tasks.items()})
             download_over = True
@@ -108,11 +116,11 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
     print('tick 数据下载完成...')
     time_record()
 
-    if error_flag or os.path.getsize(file_name) == 0:
+    if error_flag or (not os.path.exists(file_name)) or os.path.getsize(file_name) == 0:
         print('**************************************************')
         print('文件下载为空')
         print('**************************************************')
-        return result_flag,[]
+        return result_flag, []
 
     print('read_csv....')
     df = pd.read_csv(file_name)

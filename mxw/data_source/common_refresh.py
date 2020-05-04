@@ -1,9 +1,9 @@
 import os
 import sys
-
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 
+from mxw.utils import dingtalk_utils
 from mxw.data_source.tushare_wp import *
 from mxw.data_source.tq_wp import *
 from mxw.db.DbModule import *
@@ -117,19 +117,30 @@ def fetch_one_instrument_tick_data(symbol_id: str):
 
 
 def auto_command_fetch_one_instrument_tick_data(_num_id):
-    offset = _num_id * 50
-    while offset < 2950:
-        fetch_all_instrument_tick_data(offset, 50)
-        offset += 50 * 10
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
-        print('-----------------------------------------')
+    lock = redis_lock.Lock(common_utils.redis_conn, "auto_command_fetch_one_instrument_tick_data__" + str(_num_id),
+                           expire=4, auto_renewal=True)
+    if lock.acquire(blocking=False):
+        print("Got the lock.")
+        offset = _num_id * 50
+        while offset < 2950:
+            fetch_all_instrument_tick_data(offset, 50)
+            offset += 50 * 10
+            print('--------------*****************---------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+            print('-----------------------------------------')
+
+        dingtalk_utils.send_message('第{}部分下载完成...'.format(_num_id))
+
+        lock.release()
+    else:
+        print("Someone else has the lock.")
+        print("you maybe set wrong parameters.....")
 
 
 if __name__ == '__main__':
