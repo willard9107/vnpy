@@ -1,5 +1,7 @@
 import os
 import sys
+import random
+from math import *
 
 import redis
 
@@ -166,6 +168,28 @@ def pandas_read_csv_test(num):
     return []
 
 
+def cpu_benchmark():
+    def random_sort(n):
+        _li = [random.random() for i in range(n)]
+        print('start to sort....')
+        _res = sorted(_li)
+        print('end sort....')
+        return _res
+
+    def random_add(n):
+        a = 0.1
+        for i in range(n):
+            a += 3 * log(i+0.1) + cos(i) ** 2
+        print('--------------')
+        print(a)
+
+    # def random_calculate(n):
+
+    while True:
+        # random_sort(20000000)
+        random_add(20000000)
+
+
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'lock_test':
         count = 0
@@ -173,8 +197,10 @@ if __name__ == '__main__':
             redis_lock_test()
             count += 1
         print('test over...')
-    elif len(sys.argv)>1 and sys.argv[1] == 'exception_test':
+    elif len(sys.argv) > 1 and sys.argv[1] == 'exception_test':
         raise Exception('mxw exception....')
+    elif len(sys.argv) > 1 and sys.argv[1] == 'cpu_test':
+        cpu_benchmark()
     else:
         a, b = pandas_read_csv_test(1)
         print(a, b)
