@@ -47,7 +47,7 @@ CREATE TABLE `daily_bar`
     `settle_price`  float               not null COMMENT '结算价',
     `create_time`   timestamp(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (`id`),
-    UNIQUE KEY  `idx_book_id_date_time` (`order_book_id`, `date_time`)
+    UNIQUE KEY `idx_book_id_date_time` (`order_book_id`, `date_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='日K线表';
 
@@ -57,13 +57,15 @@ CREATE TABLE `open_interest_holding`
     `id`            bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
     `order_book_id` varchar(16)         not null COMMENT '合约id',
     `date_time`     date                not null COMMENT '当前交易日期',
+    `broker`        varchar(32)         not null COMMENT '期货公司',
     `data_type`     tinyint(1)          not null COMMENT '数据类型, 0 成交量；1 多单手数；2 空单手数',
     `volume`        int                 not null COMMENT '数量，具体含义取决于数据类型',
     `volume_change` int                 not null COMMENT '数量较上一天的增减',
+    `rank`          int                 not null COMMENT '排名',
     `create_time`   timestamp(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (`id`),
-    index `idx_book_id_date_time` (`order_book_id`, `date_time`),
-    index `idx_book_id_date_time_type` (`order_book_id`, `date_time`, `data_type`)
+    index `idx_book_id_date_time_type` (`order_book_id`, `date_time`, `data_type`),
+    UNIQUE KEY `idx_book_id_date_time_type_broker` (`order_book_id`, `date_time`, `data_type`, `broker`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='持仓龙虎榜';
 

@@ -22,29 +22,27 @@ class TradingDate:
 @dataclass
 class Instrument:
     symbol: str
-    common_symbol: str
-    cn_symbol: str
-    listed_date: date
-    de_listed_date: date
-    maturity_date: date
-    exchange: Exchange
-    margin_rate: float
-    contract_multiplier: float
-    trading_hours: str
+    common_symbol: str = ''
+    cn_symbol: str = ''
+    listed_date: date = None
+    de_listed_date: date = None
+    maturity_date: date = None
+    exchange: Exchange = None
+    margin_rate: float = 0.1
+    contract_multiplier: float = 10
+    trading_hours: str = ''
 
 
 @dataclass
 class OpenInterestHolding:
     symbol: str
     date_time: date
-
-    listed_date: date
-    de_listed_date: date
-    maturity_date: date
-    exchange: Exchange
-    margin_rate: float
-    contract_multiplier: float
-    trading_hours: str
+    broker: str
+    date_time: date
+    data_type: int
+    volume: int
+    volume_change: int
+    rank: int
 
 
 @dataclass

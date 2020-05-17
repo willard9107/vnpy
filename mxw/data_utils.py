@@ -10,13 +10,10 @@ def filter_nan_field(ori, default=None):
     return ori
 
 
-
-
-
 def exact_exchange_symbol(ins: Instrument):
-    if ins.exchange in ['DCE', 'INE', 'SHFE']:
+    if ins.exchange.value in ['DCE', 'INE', 'SHFE']:
         return ins.symbol.lower()
-    elif ins.exchange in ['CZCE']:
+    elif ins.exchange.value in ['CZCE']:
         ori = ins.symbol.upper()
         return ori[:-4] + ori[-3:]
     else:

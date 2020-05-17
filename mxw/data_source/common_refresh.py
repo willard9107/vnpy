@@ -11,6 +11,8 @@ from mxw.db.DbModule import *
 from vnpy.trader.constant import Exchange
 from datetime import datetime, timedelta, time
 from mxw.data_utils import *
+from mxw.data_source import other_wp
+from mxw.db import model_utils
 
 
 def fresh_all_trading_date():
@@ -159,7 +161,33 @@ def fetch_daily_bar_data():
         DbDailyBar.save_all(_d_bars)
         print(f'date: {_t_date.t_date}  数据已存储...')
 
-    pass
+
+def fetch_open_interest_holding_rank():
+    start_date = date(2020, 1, 1)
+    _max_oi = DbOpenInterestHolding.select().order_by(DbOpenInterestHolding.id.desc()).first()
+    if not (_max_oi is None):
+        start_date = _max_oi.date_time
+
+    trading_dates = DbTradingDate.select().where((DbTradingDate.t_date > start_date)
+                                                 & (DbTradingDate.t_date <= date.today())
+                                                 & (DbTradingDate.is_open == 1)).execute()
+    print(f'交易天数：{trading_dates.count}')
+    _format = '%Y-%m-%d'
+    for _t_date in trading_dates:
+        time_record()
+        _date = _t_date.t_date
+        model_list = []
+        all_ins = model_utils.get_all_instrument_by_trading_date(_date)
+        print(f'date={_date.strftime(_format)}, 共获取合约数{len(all_ins)}，开始获取当天龙虎榜信息....')
+        count = 1
+        for ins in all_ins:
+            print(f'process...{count}/{len(all_ins)}')
+            count += 1
+            model_list.extend(get_oi_holding_rank(ins, _date))
+
+        print(f'date={_date.strftime(_format)}, 共获取数据{len(model_list)}条，存储db....')
+        DbOpenInterestHolding.bulk_create(model_list)
+    return None
 
 
 if __name__ == '__main__':
@@ -173,7 +201,8 @@ if __name__ == '__main__':
             print('argument illegal')
     else:
         # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
-        fetch_daily_bar_data()
+        # fetch_daily_bar_data()
+        fetch_open_interest_holding_rank()
 
     # fresh_all_trading_date()
     # fresh_all_exchange_instruments()

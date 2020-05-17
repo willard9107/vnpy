@@ -1,3 +1,4 @@
+from datetime import date
 from functools import lru_cache
 from typing import Optional
 
@@ -15,6 +16,16 @@ def get_instrument_info_from_db(order_book_id: str) -> Optional[Instrument]:
     for item in result:
         return item.to_instrument()
     return None
+
+
+def get_all_instrument_by_trading_date(_date: date):
+    _result = DbInstrument.select().where(
+        (DbInstrument.listed_date <= _date) & (DbInstrument.de_listed_date >= _date)).execute()
+
+    ins_list = []
+    for item in _result:
+        ins_list.append(item.to_instrument())
+    return ins_list
 
 
 if __name__ == '__main__':

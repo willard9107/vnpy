@@ -84,12 +84,14 @@ class DbDailyBar(Model):
 
 
 class DbOpenInterestHolding(Model):
-    id: int = AutoField()
+    id: IntegerField = AutoField()
     order_book_id: str = CharField()
+    broker: str = CharField()
     date_time: date = DateField()
     data_type: int = IntegerField()
     volume: int = IntegerField()
     volume_change: int = IntegerField()
+    rank: int = IntegerField()
 
     create_time: datetime = DateTimeField()
 
@@ -105,6 +107,11 @@ class DbOpenInterestHolding(Model):
     class Meta:
         database = db
         table_name = 'open_interest_holding'
+
+    # @staticmethod
+    # def save_all(objs: List["DbOpenInterestHolding"]):
+    #     #_bars = [DbDailyBar.from_bar(i) for i in objs]
+    # DbOpenInterestHolding.bulk_create(objs)
 
 
 class DbTradingDate(Model):
