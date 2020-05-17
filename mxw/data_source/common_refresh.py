@@ -199,6 +199,8 @@ if __name__ == '__main__':
             auto_command_fetch_one_instrument_tick_data(num_id)
         else:
             print('argument illegal')
+    elif len(sys.argv) > 1 and sys.argv[1] == 'oi_holding':
+        fetch_open_interest_holding_rank()
     else:
         # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
         # fetch_daily_bar_data()
