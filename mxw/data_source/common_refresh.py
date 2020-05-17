@@ -1,5 +1,6 @@
 import os
 import sys
+
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 
@@ -143,17 +144,36 @@ def auto_command_fetch_one_instrument_tick_data(_num_id):
         print("you maybe set wrong parameters.....")
 
 
+def fetch_daily_bar_data():
+    """根据日k线数据库的最新数据，或者还没有获取的数据"""
+    start_date = date(2010, 1, 1)
+    _max_daily_bar = DbDailyBar.select().order_by(DbDailyBar.id.desc()).first()
+    if _max_daily_bar is not None:
+        start_date = _max_daily_bar.date_time
+
+    trading_dates = DbTradingDate.select().where((DbTradingDate.t_date > start_date)
+                                                 & (DbTradingDate.t_date <= date.today())
+                                                 & (DbTradingDate.is_open == 1)).execute()
+    for _t_date in trading_dates:
+        _d_bars = get_daily_bar_of_cn_future_exchange(_t_date.t_date)
+        DbDailyBar.save_all(_d_bars)
+        print(f'date: {_t_date.t_date}  数据已存储...')
+
+    pass
+
+
 if __name__ == '__main__':
-    if sys.argv[1] == 'one':
+    if len(sys.argv) > 1 and sys.argv[1] == 'one':
         fetch_one_instrument_tick_data(sys.argv[2].upper())
-    elif sys.argv[1] == 'ten':
+    elif len(sys.argv) > 1 and sys.argv[1] == 'ten':
         num_id = int(sys.argv[2])
         if 0 <= num_id < 10:
             auto_command_fetch_one_instrument_tick_data(num_id)
         else:
             print('argument illegal')
     else:
-        fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
+        # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
+        fetch_daily_bar_data()
 
     # fresh_all_trading_date()
     # fresh_all_exchange_instruments()

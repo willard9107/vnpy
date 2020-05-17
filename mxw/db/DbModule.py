@@ -5,14 +5,106 @@ import redis_lock
 from peewee import *
 from datetime import datetime, date, timedelta
 
-from mxw.obj import TradingDate, Instrument
+from mxw.db.PyModule import TradingDate, Instrument, OpenInterestHolding, DailyBarData
 from mxw.utils import common_utils
 from mxw.data_utils import *
-from vnpy.trader.constant import Exchange
+from vnpy.trader.constant import Exchange, Interval
 from vnpy.trader.object import BarData, TickData
 
 db = MySQLDatabase('futures', user='root', host='nas.willard.love', port=32776, password='afsd1423', charset='utf8mb4')
 db.connect()
+
+
+class DbDailyBar(Model):
+    id: AutoField = AutoField()
+    order_book_id: str = CharField()
+    date_time: date = DateField()
+    volume: int = IntegerField()
+    open_interest: int = IntegerField()
+    open_price: float = FloatField()
+    high_price: float = FloatField()
+    low_price: float = FloatField()
+    close_price: float = FloatField()
+    settle_price: float = FloatField()
+
+    create_time: datetime = DateTimeField()
+
+    @staticmethod
+    def from_bar(bar: DailyBarData):
+        """
+        Generate DbBarData object from BarData.
+        """
+        db_bar: DbDailyBar = DbDailyBar()
+
+        db_bar.order_book_id = bar.symbol
+        db_bar.date_time = bar.datetime
+        db_bar.volume = bar.volume
+        db_bar.open_interest = bar.open_interest
+        db_bar.open_price = bar.open_price
+        db_bar.high_price = bar.high_price
+        db_bar.low_price = bar.low_price
+        db_bar.close_price = bar.close_price
+        db_bar.settle_price = bar.settle_price
+        db_bar.create_time = datetime.now()
+
+        return db_bar
+
+    def to_bar(self):
+        """
+        Generate BarData object from DbBarData.
+        """
+        from mxw.db.model_utils import get_instrument_info_from_db
+        instrument: Instrument = get_instrument_info_from_db(self.order_book_id)
+        bar = BarData(
+            symbol=self.symbol,
+            exchange=instrument.exchange,
+            datetime=datetime.combine(self.date_time, datetime.min.time()),
+            interval=Interval.DAILY,
+            volume=self.volume,
+            open_interest=self.open_interest,
+            open_price=self.open_price,
+            high_price=self.high_price,
+            low_price=self.low_price,
+            close_price=self.close_price,
+            gateway_name="DB",
+        )
+        return bar
+
+    @staticmethod
+    def save_all(objs: List["DailyBarData"]):
+        _bars = [DbDailyBar.from_bar(i) for i in objs]
+        DbDailyBar.bulk_create(_bars)
+        # with db.atomic():
+        #     for c in chunked(dicts, 100):
+        #         DbInstrument.insert_many(c).on_conflict_ignore().execute()
+
+    class Meta:
+        database = db
+        table_name = 'daily_bar'
+
+
+class DbOpenInterestHolding(Model):
+    id: int = AutoField()
+    order_book_id: str = CharField()
+    date_time: date = DateField()
+    data_type: int = IntegerField()
+    volume: int = IntegerField()
+    volume_change: int = IntegerField()
+
+    create_time: datetime = DateTimeField()
+
+    # @staticmethod
+    # def from_open_interest_holding(open_in: OpenInterestHolding):
+    #     _result = DbOpenInterestHolding()
+    #     _result.date_time = open_in.date_time
+    #     _result.order_book_id = open_in.symbol
+    #     _result.volume = open_in
+    #
+    #     pass
+
+    class Meta:
+        database = db
+        table_name = 'open_interest_holding'
 
 
 class DbTradingDate(Model):
@@ -39,9 +131,9 @@ class DbTradingDate(Model):
 
 class DbInstrument(Model):
     id: int = AutoField()
-    order_book_id: str = CharField()
-    order_book_symbol: str = CharField()
-    symbol: str = CharField()
+    order_book_id: str = CharField()  # 合约id eg. RM2009, JD2006
+    order_book_symbol: str = CharField()  # 合约 标识 eg. RM, JD, M, CF
+    symbol: str = CharField()  # 合约中文id eg. 豆粕2006, 棉花2010, 豆一1209
     listed_date: date = DateField()
     de_listed_date: date = DateField()
     maturity_date: date = DateField()
@@ -62,7 +154,7 @@ class DbInstrument(Model):
 
     def to_instrument(self):
         return Instrument(self.order_book_id, self.order_book_symbol, self.symbol, self.listed_date,
-                          self.de_listed_date, self.maturity_date, self.exchange, self.margin_rate,
+                          self.de_listed_date, self.maturity_date, Exchange(self.exchange), float(self.margin_rate),
                           self.contract_multiplier, self.trading_hours)
 
     @staticmethod
@@ -157,48 +249,48 @@ def get_tick_table_class(symbol: str):
 
             return db_tick
 
-        def to_tick(self):
-            """
-            Generate TickData object from DbTickData.
-            """
-            tick = TickData(
-                symbol=symbol,
-                datetime=datetime.fromtimestamp(self.datetime / 1000000),
-                volume=self.volume,
-                open_interest=self.open_interest,
-                last_price=self.last_price,
-                last_volume=self.last_volume,
-                high_price=self.high_price,
-                low_price=self.low_price,
-                bid_price_1=self.bid_price_1,
-                ask_price_1=self.ask_price_1,
-                bid_volume_1=self.bid_volume_1,
-                ask_volume_1=self.ask_volume_1,
-                gateway_name="DB",
-            )
-
-            if self.bid_price_2:
-                tick.bid_price_2 = self.bid_price_2
-                tick.bid_price_3 = self.bid_price_3
-                tick.bid_price_4 = self.bid_price_4
-                tick.bid_price_5 = self.bid_price_5
-
-                tick.ask_price_2 = self.ask_price_2
-                tick.ask_price_3 = self.ask_price_3
-                tick.ask_price_4 = self.ask_price_4
-                tick.ask_price_5 = self.ask_price_5
-
-                tick.bid_volume_2 = self.bid_volume_2
-                tick.bid_volume_3 = self.bid_volume_3
-                tick.bid_volume_4 = self.bid_volume_4
-                tick.bid_volume_5 = self.bid_volume_5
-
-                tick.ask_volume_2 = self.ask_volume_2
-                tick.ask_volume_3 = self.ask_volume_3
-                tick.ask_volume_4 = self.ask_volume_4
-                tick.ask_volume_5 = self.ask_volume_5
-
-            return tick
+        # def to_tick(self):
+        #     """
+        #     Generate TickData object from DbTickData.
+        #     """
+        #     tick = TickData(
+        #         symbol=symbol,
+        #         datetime=datetime.fromtimestamp(self.datetime / 1000000),
+        #         volume=self.volume,
+        #         open_interest=self.open_interest,
+        #         last_price=self.last_price,
+        #         last_volume=self.last_volume,
+        #         high_price=self.high_price,
+        #         low_price=self.low_price,
+        #         bid_price_1=self.bid_price_1,
+        #         ask_price_1=self.ask_price_1,
+        #         bid_volume_1=self.bid_volume_1,
+        #         ask_volume_1=self.ask_volume_1,
+        #         gateway_name="DB",
+        #     )
+        #
+        #     if self.bid_price_2:
+        #         tick.bid_price_2 = self.bid_price_2
+        #         tick.bid_price_3 = self.bid_price_3
+        #         tick.bid_price_4 = self.bid_price_4
+        #         tick.bid_price_5 = self.bid_price_5
+        #
+        #         tick.ask_price_2 = self.ask_price_2
+        #         tick.ask_price_3 = self.ask_price_3
+        #         tick.ask_price_4 = self.ask_price_4
+        #         tick.ask_price_5 = self.ask_price_5
+        #
+        #         tick.bid_volume_2 = self.bid_volume_2
+        #         tick.bid_volume_3 = self.bid_volume_3
+        #         tick.bid_volume_4 = self.bid_volume_4
+        #         tick.bid_volume_5 = self.bid_volume_5
+        #
+        #         tick.ask_volume_2 = self.ask_volume_2
+        #         tick.ask_volume_3 = self.ask_volume_3
+        #         tick.ask_volume_4 = self.ask_volume_4
+        #         tick.ask_volume_5 = self.ask_volume_5
+        #
+        #     return tick
 
         @staticmethod
         def save_all(objs: List["TickData"]):
@@ -225,8 +317,21 @@ class ModelBase(Model):
 
 
 if __name__ == '__main__':
-    tick_class = get_tick_table_class('JD2005')
-    tick_class.save_all([TickData('', '', Exchange.DCE, datetime(2019, 1, 1, 12, 0, 0, 123456))])
+    # tick_class = get_tick_table_class('JD2005')
+    # tick_class.save_all([TickData('', '', Exchange.DCE, datetime(2019, 1, 1, 12, 0, 0, 123456))])
+    _r_ = DbTradingDate.select().order_by(DbTradingDate.id.desc())
+    # _r_ = DbDailyBar.select()
+    print(type(_r_))
+    print(dir(_r_))
+
+    _r = _r_.first()
+    print(_r.__data__)
+    print(_r.__dict__)
+    print(type(_r))
+    print(dir(_r))
+    print(_r.DoesNotExist)
+
+    pass
 
 # tick_class = get_tick_table('jd2012')
 

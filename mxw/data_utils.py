@@ -1,19 +1,35 @@
+import math
 import time as _sys_time
 
-from mxw.obj import Instrument
+from mxw.db.PyModule import Instrument
+
+
+def filter_nan_field(ori, default=None):
+    if math.isnan(ori):
+        return default
+    return ori
+
+
+
 
 
 def exact_exchange_symbol(ins: Instrument):
     if ins.exchange in ['DCE', 'INE', 'SHFE']:
-        return ins.order_book_id.lower()
+        return ins.symbol.lower()
     elif ins.exchange in ['CZCE']:
-        ori = ins.order_book_id.upper()
+        ori = ins.symbol.upper()
         return ori[:-4] + ori[-3:]
     else:
-        return ins.order_book_id.upper()
+        return ins.symbol.upper()
 
 
 def get_order_id_year(order_id: str):
+    """
+    CF2009 -> 2020
+    CF9909 -> 1999
+    """
+    if len(order_id) < 5:
+        return None
     y = int(order_id[-4:-2])
     if y < 50:
         y += 2000

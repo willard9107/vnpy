@@ -9,7 +9,7 @@ import requests
 from tqsdk import TqApi, TqSim
 from tqsdk.tools import DataDownloader
 from mxw.data_utils import get_order_id_year, exact_exchange_symbol
-from mxw.obj import Instrument
+from mxw.db.PyModule import Instrument
 import pandas as pd
 from mxw.data_utils import *
 
@@ -70,8 +70,8 @@ def download_error_once():
 def get_tick_data(instrument: Instrument, start_date: datetime, end_date: datetime, file_name: str, process=True):
     result_flag = False
     # tqsdk 没有2016年以前的数据，不需要走下面的逻辑
-    if get_order_id_year(instrument.order_book_id) < 2016 or end_date < datetime(2016, 1, 1, 0, 0, 0) \
-            or instrument.order_book_symbol in ['PM', 'RI', 'WH', 'JR']:
+    if get_order_id_year(instrument.symbol) < 2016 or end_date < datetime(2016, 1, 1, 0, 0, 0) \
+            or instrument.common_symbol in ['PM', 'RI', 'WH', 'JR']:
         return result_flag, []
 
     exchange_order_id = '{}.{}'.format(instrument.exchange, exact_exchange_symbol(instrument))
@@ -81,7 +81,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
                                                start_dt=start_date, end_dt=end_date,
                                                csv_file_name=file_name)}
 
-    print('开始 下载 tick数据, {}.{} start={}, end={}'.format(instrument.exchange, instrument.order_book_id, start_date,
+    print('开始 下载 tick数据, {}.{} start={}, end={}'.format(instrument.exchange, instrument.symbol, start_date,
                                                         end_date))
 
     error_flag = False
@@ -147,7 +147,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
             return result_flag, []
 
         # print(row[0], row[1], row['datetime'])
-        tick_data = TickData('DB', instrument.order_book_id, Exchange(instrument.exchange), tick_time, volume=volume,
+        tick_data = TickData('DB', instrument.symbol, instrument.exchange, tick_time, volume=volume,
                              open_interest=open_interest, last_price=last_price, bid_price_1=bid_price1,
                              bid_volume_1=bid_volume1, ask_price_1=ask_price1, ask_volume_1=ask_volume1)
         result.append(tick_data)
