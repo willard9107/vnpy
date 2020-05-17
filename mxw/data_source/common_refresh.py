@@ -204,7 +204,8 @@ if __name__ == '__main__':
     else:
         # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
         # fetch_daily_bar_data()
-        fetch_open_interest_holding_rank()
+        # fetch_open_interest_holding_rank()
+        print('nothing...')
 
     # fresh_all_trading_date()
     # fresh_all_exchange_instruments()
