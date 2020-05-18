@@ -168,7 +168,12 @@ def fetch_oi_by_ins_date(ins: Instrument, _date: date):
         print(f'合约龙虎榜存在，跳过.. date={_date}, symbol = {ins.symbol}')
         return
 
-    '''切换持仓获取数据源，tushare && 17kqh'''
+    '''切换持仓获取数据源，tushare && 17kqh
+    17kqh 数据源访问快，而且每天更新快，但是数据不全，只有几个主力合约的数据，而且最早到19年元旦
+    tushare 数据全，但是访问限速，更新慢
+    先用17kqh爬取近两年的数据，能爬到多少爬多少
+    然后使用tushare查漏补缺，tushare也查不到的数据，做占位处理（标记当前合约已查询过，后续更新数据不再查询）
+    '''
     # model_list = tushare_wp.get_oi_holding_rank(ins, _date)
     model_list = other_wp.get_open_interest_data_by_symbol_date(ins, _date)
 
