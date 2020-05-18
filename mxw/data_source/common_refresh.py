@@ -208,7 +208,7 @@ def fetch_open_interest_holding_rank(start_date_str: str, end_date_str=None):
         for ins in all_ins:
             # print(f'process...{count}/{len(all_ins)}')
             count += 1
-            print(f'tushare获取龙虎榜信息.{count}/{len(all_ins)}, date={_date}, symbol = {ins.symbol}')
+            print(f'获取龙虎榜信息.{count}/{len(all_ins)}, date={_date}, symbol = {ins.symbol}')
             fetch_oi_by_ins_date(ins, _date)
 
     return None
@@ -229,7 +229,8 @@ if __name__ == '__main__':
         else:
             # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
             # fetch_daily_bar_data()
-            fetch_open_interest_holding_rank('20200101', '20200519')
+            # fetch_open_interest_holding_rank('20200101', '20200519')
+            fetch_open_interest_holding_rank('20200101')
             print('nothing...')
             # raise Exception('持仓龙虎榜数据获取异常，数据量小于20')
 

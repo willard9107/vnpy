@@ -26,8 +26,10 @@ def get_open_interest_data_by_symbol_date(ins: Instrument, _date: date):
         return False
 
     if not check_date_available():
+        print(f'17kqh 没有当前日期数据，跳过, date={_date_str}, symbol = {ins.symbol}')
         return []
 
+    print(f'17kqh获取龙虎榜信息, date={_date_str}, symbol = {ins.symbol}')
     raw_html = requests.get(url_path).text
     m_time.sleep(0.01)
 
