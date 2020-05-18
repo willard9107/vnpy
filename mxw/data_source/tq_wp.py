@@ -1,8 +1,4 @@
-import math
-import sys
-import os
-import time
-from datetime import datetime, date
+from mxw.utils.common_import import *
 from contextlib import closing
 
 import requests
@@ -90,7 +86,7 @@ def get_tick_data(instrument: Instrument, start_date: datetime, end_date: dateti
     while not download_over:
         try:
             while not all([v.is_finished() for v in download_tasks.values()]):
-                if not _tq_api.wait_update(time.time() + 1):
+                if not _tq_api.wait_update(m_time.time() + 1):
                     os.remove(file_name)
                     error_flag = True
                     print('fetch tick error-> {}  date = {}'.format(instrument, end_date), file=sys.stderr)

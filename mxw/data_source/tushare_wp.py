@@ -1,5 +1,4 @@
-import sys
-import time as _time
+from mxw.utils.common_import import *
 from datetime import date, datetime
 
 from pandas import DataFrame
@@ -54,7 +53,7 @@ def get_daily_bar_of_cn_future_exchange(_date: date):
     for e in m_constants.CHINESE_FUTURE_EXCHANGES_STR:
         # for e in [exchange]:
         _df: DataFrame = pro.fut_daily(trade_date=_date_str, exchange=e)
-        _time.sleep(0.5)  # tushare限定此接口一分钟只可访问120次，当前配置120次
+        m_time.sleep(0.5)  # tushare限定此接口一分钟只可访问120次，当前配置120次
         # print(_df.to_string())
         print(f'"{e}" date:{_date}:  日线数据量   {_df.shape[0]}条')
         for index, row in _df.iterrows():
@@ -79,13 +78,30 @@ def get_daily_bar_of_cn_future_exchange(_date: date):
 def get_oi_holding_rank(ins: Instrument, _date: date):
     _date_str = _date.strftime('%Y%m%d')
 
+    time_record()
     print(f'tushare获取龙虎榜信息, date={_date_str}, symbol = {ins.symbol}')
     _df: DataFrame = pro.fut_holding(trade_date=_date_str, symbol=ins.symbol,
                                      exchange=ins.exchange.value)
-    _time.sleep(0.75)  # tushare限定此接口一分钟只可访问80次，当前配置80次
+    # print(_df.to_string())
+    m_time.sleep(0.6)  # tushare限定此接口一分钟只可访问80次，当前配置80次
     _model_list = []
+
+    def get_tmp_model():
+        tmp_model = DbOpenInterestHolding()
+        tmp_model.order_book_id = ins.symbol
+        tmp_model.date_time = _date
+        tmp_model.broker = 'tmp_broker'
+        tmp_model.data_type = -1
+        tmp_model.volume = -1
+        tmp_model.volume_change = -1
+        tmp_model.rank = -1
+        tmp_model.create_time = datetime.now()
+        return tmp_model
+
     if len(_df) == 0:
-        return []
+        '''如果当天应该有数据，但是没有，添加占位符，为了后面好判断当天的数据已经拉取过'''
+        model_list = [get_tmp_model()]
+        return model_list
 
     def _process_df_data(vol: str, chg: str, _type: int):
         _df1 = _df.sort_values(by=vol, ascending=False)
@@ -124,7 +140,8 @@ def get_oi_holding_rank(ins: Instrument, _date: date):
     _process_df_data('vol', 'vol_chg', 0)
     _process_df_data('long_hld', 'long_chg', 1)
     _process_df_data('short_hld', 'short_chg', 2)
-
+    if not _model_list:
+        _model_list = [get_tmp_model()]
     return _model_list
 
 
@@ -136,7 +153,7 @@ if __name__ == '__main__':
     # print(df.to_string())
     # _r = get_oi_holding_rank(Instrument('M1005', exchange=Exchange.DCE), date(2010, 3, 13))
     # _r = get_oi_holding_rank(Instrument('JD2006', exchange=Exchange.DCE), date(2020, 5, 15))
-    _r = get_oi_holding_rank(Instrument('CF2009', exchange=Exchange.CZCE), date(2020, 5, 15))
+    _r = get_oi_holding_rank(Instrument('A1903', exchange=Exchange.CZCE), date(2019, 1, 2))
     for item in _r:
         print(item.__data__)
     # print(_r)

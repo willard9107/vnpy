@@ -1,3 +1,4 @@
+from mxw.utils.common_import import *
 import json
 from datetime import date, datetime
 import requests
@@ -10,8 +11,25 @@ from mxw.db.DbModule import DbOpenInterestHolding
 def get_open_interest_data_by_symbol_date(ins: Instrument, _date: date):
     _date_str = _date.strftime('%Y%m%d')
     symbol = exact_exchange_symbol(ins)
+    # print(f'17kqh获取龙虎榜信息, date={_date_str}, symbol = {ins.symbol}')
+
     url_path = f'http://cc.17kqh.com/holding/{symbol}/{_date_str}/'
+
+    def check_date_available():
+        before_day = _date - timedelta(days=1)
+        before_day_str = before_day.strftime('%Y%m%d')
+        check_url = f'http://cc.17kqh.com/datemenu/{symbol}/{before_day_str}/'
+        _raw_html = requests.get(check_url).text
+        check_dict = json.loads(_raw_html)
+        if check_dict.get('n', None) == _date_str:
+            return True
+        return False
+
+    if not check_date_available():
+        return []
+
     raw_html = requests.get(url_path).text
+    m_time.sleep(0.01)
 
     buy_sep = 'var dataBuy = '
     sell_sep = 'var dataSale = '
@@ -27,12 +45,14 @@ def get_open_interest_data_by_symbol_date(ins: Instrument, _date: date):
 
     def _store_data_by_type(type_str: str, type_int: int):
         _dict = _process_17kqh_str(type_str)
-        if len(_dict) < 20:
-            raise Exception('持仓龙虎榜数据获取异常，数据量小于20')
+        if len(_dict) < 20 and len(_dict) != 0:
+            # raise Exception('持仓龙虎榜数据获取异常，数据量小于20')
+            # dingtalk_utils.send_message(f'龙虎榜数据获取异常,只有 {len(_dict)} 条数据 symbol={ins.symbol},date={_date}, type={type_str}')
+            print(f'龙虎榜数据获取异常,只有 {len(_dict)} 条数据 symbol={ins.symbol},date={_date}, type={type_str}', file=sys.stderr)
         count = 0
         for item in _dict:
             count += 1
-            if item['now'] == 0:
+            if item['now'] == 0 and count > 20:
                 continue
             _model = DbOpenInterestHolding()
             _model.order_book_id = ins.symbol
@@ -54,5 +74,6 @@ def get_open_interest_data_by_symbol_date(ins: Instrument, _date: date):
 
 if __name__ == '__main__':
     get_open_interest_data_by_symbol_date(Instrument('JD2006', exchange=Exchange.DCE), date(2020, 5, 15))
-    get_open_interest_data_by_symbol_date(Instrument('CF2009', exchange=Exchange.CZCE), date(2020, 5, 15))
+    get_open_interest_data_by_symbol_date(Instrument('JD2006', exchange=Exchange.DCE), date(2019, 5, 15))
+    get_open_interest_data_by_symbol_date(Instrument('CF2009', exchange=Exchange.CZCE), date(2020, 5, 18))
     pass

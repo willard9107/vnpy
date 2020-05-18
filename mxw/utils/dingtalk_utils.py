@@ -1,4 +1,4 @@
-import time
+from mxw.utils.common_import import *
 import hmac
 import hashlib
 import base64
@@ -7,9 +7,10 @@ import requests
 
 
 def send_message(message: str, at_users=None, is_at_all=False):
+    print(f'ding send: {message}')
     webhook = 'https://oapi.dingtalk.com/robot/send?access_token=f77f0641a38f62adb54649570b534165b42db34bb746409a92c2c79c7d12c351'
 
-    timestamp = str(round(time.time() * 1000))
+    timestamp = str(round(m_time.time() * 1000))
     secret = 'SECb6d442fc2afcee9b44e51d704d618804b9e5291cc363bb534569a54af07b0573'
     secret_enc = secret.encode('utf-8')
     string_to_sign = '{}\n{}'.format(timestamp, secret)

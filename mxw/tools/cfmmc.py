@@ -2,8 +2,8 @@
 Author: shifulin
 Email: shifulin666@qq.com
 """
+from mxw.utils.common_import import *
 # python3
-import time
 from io import BytesIO
 
 from requests import session
@@ -76,8 +76,8 @@ def do(user_id, passwd):
                     print('爬取客户权益 成功')
                     print(f'账户:{user_id}  客户权益:{current_equity}')
                     return
-            time.sleep(1)
-            veri_code_url = "https://investorservice.cfmmc.com/veriCode.do?t=" + str(int(time.time() * 1000))
+            m_time.sleep(1)
+            veri_code_url = "https://investorservice.cfmmc.com/veriCode.do?t=" + str(int(m_time.time() * 1000))
         except Exception as e:
             print(e)
     print('爬取客户权益 失败')

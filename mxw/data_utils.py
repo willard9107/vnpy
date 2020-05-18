@@ -1,5 +1,4 @@
-import math
-import time as _sys_time
+from mxw.utils.common_import import *
 
 from mxw.db.PyModule import Instrument
 
@@ -35,12 +34,12 @@ def get_order_id_year(order_id: str):
     return y
 
 
-last_time = _sys_time.time()
+last_time = m_time.time()
 
 
 def time_record():
     global last_time
-    cur_time = _sys_time.time()
+    cur_time = m_time.time()
     print('耗时: {}秒'.format(cur_time - last_time))
     last_time = cur_time
 
@@ -48,10 +47,10 @@ def time_record():
 if __name__ == '__main__':
     # print(get_order_id_year('CU2105'))
     time_record()
-    _sys_time.sleep(1)
+    m_time.sleep(1)
     time_record()
-    _sys_time.sleep(3)
+    m_time.sleep(3)
     time_record()
-    _sys_time.sleep(2)
+    m_time.sleep(2)
     time_record()
     pass

@@ -1,29 +1,23 @@
-import os
-import sys
-
-if os.getcwd() not in sys.path:
-    sys.path.append(os.getcwd())
+from mxw.utils.common_import import *
 
 from mxw.utils import dingtalk_utils
-from mxw.data_source.tushare_wp import *
 from mxw.data_source.tq_wp import *
 from mxw.db.DbModule import *
 from vnpy.trader.constant import Exchange
-from datetime import datetime, timedelta, time
 from mxw.data_utils import *
-from mxw.data_source import other_wp
+from mxw.data_source import other_wp, tushare_wp
 from mxw.db import model_utils
 
 
 def fresh_all_trading_date():
-    all_dates = get_futures_trading_date('20000101', '20221231')
+    all_dates = tushare_wp.get_futures_trading_date('20000101', '20221231')
     DbTradingDate.save_all(all_dates)
 
 
 def fresh_all_exchange_instruments():
     future_exchanges = [Exchange.DCE, Exchange.CZCE, Exchange.CFFEX, Exchange.SHFE, Exchange.INE]
     for exchange in future_exchanges:
-        ins_list = get_future_instruments(exchange.value)
+        ins_list = tushare_wp.get_future_instruments(exchange.value)
         DbInstrument.save_all(ins_list)
 
 
@@ -157,58 +151,88 @@ def fetch_daily_bar_data():
                                                  & (DbTradingDate.t_date <= date.today())
                                                  & (DbTradingDate.is_open == 1)).execute()
     for _t_date in trading_dates:
-        _d_bars = get_daily_bar_of_cn_future_exchange(_t_date.t_date)
+        _d_bars = tushare_wp.get_daily_bar_of_cn_future_exchange(_t_date.t_date)
         DbDailyBar.save_all(_d_bars)
         print(f'date: {_t_date.t_date}  数据已存储...')
 
 
-def fetch_open_interest_holding_rank():
-    start_date = date(2020, 1, 1)
-    _max_oi = DbOpenInterestHolding.select().order_by(DbOpenInterestHolding.id.desc()).first()
-    if not (_max_oi is None):
-        start_date = _max_oi.date_time
+def fetch_oi_by_ins_date(ins: Instrument, _date: date):
+    def check_date_exist(_t_d: date):
+        _max_oi = DbOpenInterestHolding.select().where(
+            (DbOpenInterestHolding.date_time == _t_d) & (DbOpenInterestHolding.order_book_id == ins.symbol)).first()
+        if _max_oi is not None:
+            return True
+        return False
 
-    trading_dates = DbTradingDate.select().where((DbTradingDate.t_date > start_date)
-                                                 & (DbTradingDate.t_date <= date.today())
+    if check_date_exist(_date):
+        print(f'合约龙虎榜存在，跳过.. date={_date}, symbol = {ins.symbol}')
+        return
+
+    '''切换持仓获取数据源，tushare && 17kqh'''
+    # model_list = tushare_wp.get_oi_holding_rank(ins, _date)
+    model_list = other_wp.get_open_interest_data_by_symbol_date(ins, _date)
+
+    DbOpenInterestHolding.bulk_create(model_list)
+    return model_list
+
+
+def fetch_open_interest_holding_rank(start_date_str: str, end_date_str=None):
+    start_date = datetime.strptime(start_date_str, '%Y%m%d').date()
+    end_date = date.today()
+    if datetime.now().time() < d_time(17, 0):
+        end_date = end_date - timedelta(days=1)
+
+    if end_date_str:
+        _end_date = datetime.strptime(end_date_str, '%Y%m%d').date()
+        if _end_date < end_date:
+            end_date = _end_date
+
+    trading_dates = DbTradingDate.select().where((DbTradingDate.t_date >= start_date)
+                                                 & (DbTradingDate.t_date <= end_date)
                                                  & (DbTradingDate.is_open == 1)).execute()
     print(f'交易天数：{trading_dates.count}')
     _format = '%Y-%m-%d'
     for _t_date in trading_dates:
-        time_record()
         _date = _t_date.t_date
+
+        time_record()
         model_list = []
         all_ins = model_utils.get_all_instrument_by_trading_date(_date)
         print(f'date={_date.strftime(_format)}, 共获取合约数{len(all_ins)}，开始获取当天龙虎榜信息....')
         count = 1
         for ins in all_ins:
-            print(f'process...{count}/{len(all_ins)}')
+            # print(f'process...{count}/{len(all_ins)}')
             count += 1
-            model_list.extend(get_oi_holding_rank(ins, _date))
+            print(f'tushare获取龙虎榜信息.{count}/{len(all_ins)}, date={_date}, symbol = {ins.symbol}')
+            fetch_oi_by_ins_date(ins, _date)
 
-        print(f'date={_date.strftime(_format)}, 共获取数据{len(model_list)}条，存储db....')
-        DbOpenInterestHolding.bulk_create(model_list)
     return None
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1] == 'one':
-        fetch_one_instrument_tick_data(sys.argv[2].upper())
-    elif len(sys.argv) > 1 and sys.argv[1] == 'ten':
-        num_id = int(sys.argv[2])
-        if 0 <= num_id < 10:
-            auto_command_fetch_one_instrument_tick_data(num_id)
+    try:
+        if len(sys.argv) > 1 and sys.argv[1] == 'one':
+            fetch_one_instrument_tick_data(sys.argv[2].upper())
+        elif len(sys.argv) > 1 and sys.argv[1] == 'ten':
+            num_id = int(sys.argv[2])
+            if 0 <= num_id < 10:
+                auto_command_fetch_one_instrument_tick_data(num_id)
+            else:
+                print('argument illegal')
+        elif len(sys.argv) > 3 and sys.argv[1] == 'oi_holding':
+            fetch_open_interest_holding_rank(sys.argv[2], sys.argv[3])
         else:
-            print('argument illegal')
-    elif len(sys.argv) > 1 and sys.argv[1] == 'oi_holding':
-        fetch_open_interest_holding_rank()
-    else:
-        # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
-        # fetch_daily_bar_data()
-        # fetch_open_interest_holding_rank()
-        print('nothing...')
+            # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
+            # fetch_daily_bar_data()
+            fetch_open_interest_holding_rank('20190101', '20191231')
+            print('nothing...')
+            # raise Exception('持仓龙虎榜数据获取异常，数据量小于20')
 
-    # fresh_all_trading_date()
-    # fresh_all_exchange_instruments()
+        # fresh_all_trading_date()
+        # fresh_all_exchange_instruments()
 
-    # fetch_all_instrument_tick_data(0, 1000)
+        # fetch_all_instrument_tick_data(0, 1000)
+    except Exception as e:
+        dingtalk_utils.send_message(f'脚本运行发生异常 sys.argv:\n{sys.argv}\nmsg:--- {e}\n{traceback.format_exc()}')
+
     pass

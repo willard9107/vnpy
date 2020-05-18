@@ -1,7 +1,4 @@
-import os
-import sys
-import random
-from math import *
+from mxw.utils.common_import import *
 
 import redis
 
@@ -179,7 +176,7 @@ def cpu_benchmark():
     def random_add(n):
         a = 0.1
         for i in range(n):
-            a += 3 * log(i+0.1) + cos(i) ** 2
+            a += 3 * math.log(i + 0.1) + math.cos(i) ** 2
         print('--------------')
         print(a)
 
