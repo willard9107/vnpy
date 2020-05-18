@@ -6,7 +6,7 @@ import urllib.parse
 import requests
 
 
-def send_message(message: str, at_users=None, is_at_all=False):
+def send_message(message: str, at_users=None, is_at_all=True):
     print(f'ding send: {message}')
     webhook = 'https://oapi.dingtalk.com/robot/send?access_token=f77f0641a38f62adb54649570b534165b42db34bb746409a92c2c79c7d12c351'
 
@@ -33,5 +33,5 @@ def send_message(message: str, at_users=None, is_at_all=False):
 
 
 if __name__ == '__main__':
-    # send_message('这是一条测试 @18614069492 @13051059554 消息', ['13051059554'])
-    send_message('这是一条测试at all @18614069492 消息', is_at_all=True)
+    send_message('这是一条测试 @18614069492 @13051059554 消息', ['13051059554'])
+    # send_message('这是一条测试at all @18614069492 消息', at_users=['18614069492'],is_at_all=True)

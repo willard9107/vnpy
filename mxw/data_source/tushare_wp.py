@@ -10,6 +10,7 @@ from mxw.utils import m_constants
 from mxw.db.PyModule import TradingDate, DailyBarData
 from vnpy.trader.constant import Exchange, Interval
 from mxw.data_utils import *
+from mxw.utils import common_utils
 
 pro = ts.pro_api('4c0f90a3e376dead9ef82f55d86c9c41d6c1ab68b72312ebb9a1be99')
 
@@ -80,10 +81,15 @@ def get_oi_holding_rank(ins: Instrument, _date: date):
 
     time_record()
     print(f'tushare获取龙虎榜信息, date={_date_str}, symbol = {ins.symbol}')
-    _df: DataFrame = pro.fut_holding(trade_date=_date_str, symbol=ins.symbol,
-                                     exchange=ins.exchange.value)
+
+    '''增加tushare的重试逻辑，防止出发接口限流策略'''
+    def _call_tushare_oi():
+        return pro.fut_holding(trade_date=_date_str, symbol=ins.symbol,
+                               exchange=ins.exchange.value)
+
+    _df = _call_tushare_api_with_retry(_call_tushare_oi)
     # print(_df.to_string())
-    m_time.sleep(0.6)  # tushare限定此接口一分钟只可访问80次，当前配置80次
+    m_time.sleep(0.63)  # tushare限定此接口一分钟只可访问80次，当前配置80次
     _model_list = []
 
     def get_tmp_model():
@@ -143,6 +149,17 @@ def get_oi_holding_rank(ins: Instrument, _date: date):
     if not _model_list:
         _model_list = [get_tmp_model()]
     return _model_list
+
+
+def _call_tushare_api_with_retry(fn):
+    try:
+        res = fn()
+        return res
+    except Exception as e:
+        common_utils.error_log_with_ding_talk(
+            f'脚本运行发生异常 sys.argv:\n{sys.argv}\nmsg:--- {e}\n{traceback.format_exc()}\n\n任务重新尝试运行')
+        m_time.sleep(2)
+        return fn()
 
 
 if __name__ == '__main__':
