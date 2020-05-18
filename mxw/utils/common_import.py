@@ -7,7 +7,7 @@ import traceback
 import math
 import random
 
-if os.getcwd() not in sys.path:
-    sys.path.append(os.getcwd())
+# if os.getcwd() not in sys.path:
+#     sys.path.append(os.getcwd())
 
 from mxw.utils import dingtalk_utils
