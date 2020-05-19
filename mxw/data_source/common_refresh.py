@@ -174,8 +174,22 @@ def fetch_oi_by_ins_date(ins: Instrument, _date: date):
     先用17kqh爬取近两年的数据，能爬到多少爬多少
     然后使用tushare查漏补缺，tushare也查不到的数据，做占位处理（标记当前合约已查询过，后续更新数据不再查询）
     '''
-    model_list = tushare_wp.get_oi_holding_rank(ins, _date)
+    # model_list = tushare_wp.get_oi_holding_rank(ins, _date)
     # model_list = other_wp.get_open_interest_data_by_symbol_date(ins, _date)
+    def get_tmp_model():
+        tmp_model = DbOpenInterestHolding()
+        tmp_model.order_book_id = ins.symbol
+        tmp_model.date_time = _date
+        tmp_model.broker = 'tmp_broker'
+        tmp_model.data_type = -1
+        tmp_model.volume = -1
+        tmp_model.volume_change = -1
+        tmp_model.rank = -1
+        tmp_model.create_time = datetime.now()
+        print(f'tushare 无数据，添加占位数据, date={_date.strftime("%Y%m%d")}, symbol = {ins.symbol}', file=sys.stderr)
+        return tmp_model
+
+    model_list = [get_tmp_model()]
 
     DbOpenInterestHolding.bulk_create(model_list)
     return model_list
@@ -230,8 +244,8 @@ if __name__ == '__main__':
             # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
             # fetch_daily_bar_data()
             # fetch_open_interest_holding_rank('20200101', '20200519')
-            # fetch_open_interest_holding_rank('20191219', '20191231')
-            fetch_open_interest_holding_rank('20200101')
+            fetch_open_interest_holding_rank('20190410', '20191231')
+            # fetch_open_interest_holding_rank('20200101')
             print('nothing...')
             # raise Exception('持仓龙虎榜数据获取异常，数据量小于20')
 
