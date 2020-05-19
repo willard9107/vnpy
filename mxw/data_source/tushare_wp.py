@@ -102,6 +102,7 @@ def get_oi_holding_rank(ins: Instrument, _date: date):
         tmp_model.volume_change = -1
         tmp_model.rank = -1
         tmp_model.create_time = datetime.now()
+        print(f'tushare 无数据，添加占位数据, date={_date_str}, symbol = {ins.symbol}', file=sys.stderr)
         return tmp_model
 
     if len(_df) == 0:

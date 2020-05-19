@@ -230,6 +230,7 @@ if __name__ == '__main__':
             # fetch_all_instrument_tick_data(int(sys.argv[1]), int(sys.argv[2]), sys.argv[1:])
             # fetch_daily_bar_data()
             # fetch_open_interest_holding_rank('20200101', '20200519')
+            # fetch_open_interest_holding_rank('20191219', '20191231')
             fetch_open_interest_holding_rank('20200101')
             print('nothing...')
             # raise Exception('持仓龙虎榜数据获取异常，数据量小于20')
