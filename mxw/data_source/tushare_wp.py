@@ -54,7 +54,7 @@ def get_daily_bar_of_cn_future_exchange(_date: date):
     for e in m_constants.CHINESE_FUTURE_EXCHANGES_STR:
         # for e in [exchange]:
         _df: DataFrame = pro.fut_daily(trade_date=_date_str, exchange=e)
-        m_time.sleep(0.5)  # tushare限定此接口一分钟只可访问120次，当前配置120次
+        m_time.sleep(3)  # tushare限定此接口一分钟只可访问120次，当前配置120次
         # print(_df.to_string())
         print(f'"{e}" date:{_date}:  日线数据量   {_df.shape[0]}条')
         for index, row in _df.iterrows():
